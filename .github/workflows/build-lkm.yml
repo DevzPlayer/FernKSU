@@ -1,4 +1,5 @@
 name: Build LKM for KernelSU
+
 on:
   workflow_call:
     inputs:
@@ -8,9 +9,8 @@ on:
         default: true
         description: "Whether to upload to branch"
     secrets:
-      # username:github_pat
       TOKEN:
-        required: true
+        required: false  # Agora opcional
   workflow_dispatch:
     inputs:
       upload:
@@ -18,6 +18,7 @@ on:
         type: boolean
         default: true
         description: "Whether to upload to branch"
+
 jobs:
   build-lkm:
     strategy:
@@ -41,7 +42,6 @@ jobs:
           - version: "android15-6.6"
             sub_level: 87
             os_patch_level: 2025-05
-    # uses: ./.github/workflows/gki-kernel-mock.yml when debugging
     uses: ./.github/workflows/gki-kernel.yml
     with:
       version: ${{ matrix.version }}
@@ -60,15 +60,21 @@ jobs:
         with:
           path: bin/
           merge-multiple: true
+
       - name: Push to branch LKM
+        env:
+          TOKEN: ${{ secrets.TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           cd bin
           git config --global init.defaultBranch lkm
           git init
-          git remote add origin https://${{ secrets.TOKEN }}@github.com/${{ github.repository }}
+          git remote add origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           find . -type f
           git add .
-          git commit -m "Upload LKM from ${{ github.sha }}" -m "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          git commit -m "Upload LKM from ${{ github.sha }}" -m "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" || true
+
+          git branch -M lkm
           git push --force --set-upstream origin lkm
