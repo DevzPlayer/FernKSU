@@ -1,4 +1,4 @@
-name: Build Manager
+SukiSU-Ultra/SukiSU-Ultraname: Build Manager
 
 on:
   push:
